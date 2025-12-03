@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 class SleepTimerApp(rumps.App):
     def __init__(self):
-        super(SleepTimerApp, self).__init__("💤", quit_button=None)
+        super(SleepTimerApp, self).__init__("⏾", quit_button=None)
         self.timer_active = False
         self.remaining_seconds = 0
         self.action_type = "sleep"  # 'sleep' or 'shutdown'
@@ -48,15 +48,15 @@ class SleepTimerApp(rumps.App):
             seconds = self.remaining_seconds % 60
             
             if hours > 0:
-                self.title = f"💤 {hours}:{minutes:02d}:{seconds:02d}"
+                self.title = f"⏾ {hours}:{minutes:02d}:{seconds:02d}"
             else:
-                self.title = f"💤 {minutes}:{seconds:02d}"
+                self.title = f"⏾ {minutes}:{seconds:02d}"
             
             # Check if timer has finished
             if self.remaining_seconds == 0:
                 self.execute_action()
         elif not self.timer_active:
-            self.title = "💤"
+            self.title = "⏾"
     
     def update_menu_state(self):
         """Update menu items based on timer state"""
@@ -144,7 +144,7 @@ class SleepTimerApp(rumps.App):
         if self.timer_active:
             self.timer_active = False
             self.remaining_seconds = 0
-            self.title = "💤"
+            self.title = "⏾"
             
             self.update_menu_state()
             
@@ -157,7 +157,7 @@ class SleepTimerApp(rumps.App):
     def execute_action(self):
         """Execute the sleep or shutdown action"""
         self.timer_active = False
-        self.title = "💤"
+        self.title = "⏾"
         self.update_menu_state()
         
         try:
