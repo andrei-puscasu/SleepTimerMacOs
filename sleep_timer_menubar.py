@@ -13,10 +13,8 @@ from datetime import datetime, timedelta
 class SleepTimerApp(rumps.App):
     def __init__(self):
         super(SleepTimerApp, self).__init__("💤", quit_button=None)
-        self.timer_thread = None
         self.timer_active = False
         self.remaining_seconds = 0
-        self.update_timer = None
         self.action_type = "sleep"  # 'sleep' or 'shutdown'
         
         # Build the menu
@@ -38,6 +36,27 @@ class SleepTimerApp(rumps.App):
         ]
         
         self.update_menu_state()
+    
+    @rumps.timer(1)
+    def update_display(self, _):
+        """Update the menu bar title with remaining time every second"""
+        if self.timer_active and self.remaining_seconds > 0:
+            self.remaining_seconds -= 1
+            
+            hours = self.remaining_seconds // 3600
+            minutes = (self.remaining_seconds % 3600) // 60
+            seconds = self.remaining_seconds % 60
+            
+            if hours > 0:
+                self.title = f"💤 {hours}:{minutes:02d}:{seconds:02d}"
+            else:
+                self.title = f"💤 {minutes}:{seconds:02d}"
+            
+            # Check if timer has finished
+            if self.remaining_seconds == 0:
+                self.execute_action()
+        elif not self.timer_active:
+            self.title = "💤"
     
     def update_menu_state(self):
         """Update menu items based on timer state"""
@@ -119,44 +138,6 @@ class SleepTimerApp(rumps.App):
             subtitle=f"Mac will {action_text} in {minutes} minutes",
             message=f"Scheduled for {end_time.strftime('%H:%M:%S')}"
         )
-        
-        # Start the countdown
-        self.timer_thread = threading.Thread(target=self.countdown)
-        self.timer_thread.daemon = True
-        self.timer_thread.start()
-        
-        # Start UI update timer
-        self.update_display()
-    
-    def countdown(self):
-        """Countdown thread"""
-        import time
-        while self.remaining_seconds > 0 and self.timer_active:
-            time.sleep(1)
-            self.remaining_seconds -= 1
-        
-        if self.timer_active:
-            self.execute_action()
-    
-    def update_display(self):
-        """Update the menu bar title with remaining time"""
-        if self.timer_active and self.remaining_seconds > 0:
-            hours = self.remaining_seconds // 3600
-            minutes = (self.remaining_seconds % 3600) // 60
-            seconds = self.remaining_seconds % 60
-            
-            if hours > 0:
-                self.title = f"💤 {hours}:{minutes:02d}:{seconds:02d}"
-            else:
-                self.title = f"💤 {minutes}:{seconds:02d}"
-            
-            # Schedule next update
-            self.update_timer = rumps.Timer(self.update_display, 1)
-            self.update_timer.start()
-        else:
-            self.title = "💤"
-            if self.update_timer:
-                self.update_timer.stop()
     
     def cancel_timer(self, _):
         """Cancel the active timer"""
@@ -164,9 +145,6 @@ class SleepTimerApp(rumps.App):
             self.timer_active = False
             self.remaining_seconds = 0
             self.title = "💤"
-            
-            if self.update_timer:
-                self.update_timer.stop()
             
             self.update_menu_state()
             
@@ -180,9 +158,7 @@ class SleepTimerApp(rumps.App):
         """Execute the sleep or shutdown action"""
         self.timer_active = False
         self.title = "💤"
-        
-        if self.update_timer:
-            self.update_timer.stop()
+        self.update_menu_state()
         
         try:
             if self.action_type == "sleep":
@@ -205,8 +181,6 @@ class SleepTimerApp(rumps.App):
                 subprocess.run(["osascript", "-e", 'tell app "System Events" to shut down'], check=True)
         except Exception as e:
             rumps.alert("Error", f"Failed to {self.action_type} Mac: {str(e)}")
-        
-        self.update_menu_state()
     
     def quit_app(self, _):
         """Quit the application"""
